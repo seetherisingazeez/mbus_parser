@@ -81,4 +81,3 @@ The decoder supports all standard primary VIFs such as:
 - Operating Times (days, hours)
 - Voltage (V) & Current (A)
 
-*This project is heavily inspired by existing C/C++ M-Bus protocol decoders but re-written from scratch for memory safety, concurrency, and cross-platform use.*
