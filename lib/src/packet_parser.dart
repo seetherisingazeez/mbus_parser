@@ -4,7 +4,8 @@ import 'models.dart';
 import 'mbus_enums.dart';
 import 'mbus_record_decoder.dart';
 
-// Overridable print function for debugging
+/// Overridable print function for debugging the M-Bus parser library.
+/// Defaults to standard [print].
 void Function(String) debugPrint = print;
 
 class _PreprocessResult {
@@ -19,7 +20,9 @@ class _PreprocessResult {
   });
 }
 
+/// The main parser class containing static methods to unpack and decode M-Bus telegraphs.
 class PacketParser {
+  /// Decodes the 2-byte manufacturer code into a 3-character ASCII string.
   static void decodeManufacturer(int mCode, List<int> out) {
     out[0] = ((mCode >> 10) & 0x1F) + 64;
     out[1] = ((mCode >> 5) & 0x1F) + 64;
@@ -37,10 +40,16 @@ class PacketParser {
     return buffer;
   }
 
+  /// Parses a raw M-Bus hexadecimal string into a [ParsedResult].
+  ///
+  /// Automatically handles stripping packet boundaries, decryption, and decoding.
+  /// If the payload is encrypted (Mode 5), you must supply a 16-byte [keyHex].
   static ParsedResult parseHex(
     String hexString, {
     String? keyHex,
+    String? ivHex,
     MBusDriver? driver,
+    bool isPayloadOnly = false,
   }) {
     debugPrint("Hex Input: $hexString");
     final rawBuffer = _hexToBytes(hexString);
@@ -60,33 +69,92 @@ class PacketParser {
       }
     }
 
-    return parsePacket(rawBuffer, key: keyBytes, driver: driver);
+    Uint8List? ivBytes;
+    if (ivHex != null && ivHex.isNotEmpty) {
+      ivBytes = _hexToBytes(ivHex);
+      if (ivBytes.length != 16) {
+        debugPrint(
+          "Error: IV must be 16 bytes (32 hex chars). Provided len: ${ivBytes.length}",
+        );
+        return const ParsedResult(error: 'Invalid IV Length');
+      }
+    }
+
+    return parsePacket(
+      rawBuffer,
+      key: keyBytes,
+      iv: ivBytes,
+      driver: driver,
+      isPayloadOnly: isPayloadOnly,
+    );
   }
 
+  /// Parses a raw [Uint8List] buffer representing an M-Bus packet.
   static ParsedResult parsePacket(
     Uint8List rawBuffer, {
     Uint8List? key,
+    Uint8List? iv,
     MBusDriver? driver,
+    bool isPayloadOnly = false,
   }) {
     final headerInfo = HeaderInfo();
-    final result = _preprocessFrame(rawBuffer, key, headerInfo);
+    List<int> payload;
+    int payloadOffset = 0;
 
-    if (result.errorMsg != null) {
-      return ParsedResult(
-        header: headerInfo.isValid ? headerInfo : null,
-        error: result.errorMsg,
-      );
+    if (isPayloadOnly) {
+      if (key != null) {
+        // Direct AES decryption on the payload without headers.
+        // Uses provided IV or an empty IV if the full header was stripped.
+        Uint8List ivBytes = iv ?? Uint8List(16);
+
+        int decryptableLen = (rawBuffer.length ~/ 16) * 16;
+        Uint8List decrypted = Uint8List(decryptableLen);
+
+        final cipher = CBCBlockCipher(AESEngine());
+        final params = ParametersWithIV(KeyParameter(key), ivBytes);
+        cipher.init(false, params);
+
+        for (int offset = 0; offset < decryptableLen; offset += 16) {
+          cipher.processBlock(rawBuffer, offset, decrypted, offset);
+        }
+
+        // The remaining bytes (if any) are appended undecrypted
+        payload = List<int>.from(decrypted);
+        if (rawBuffer.length > decryptableLen) {
+          payload.addAll(rawBuffer.sublist(decryptableLen));
+        }
+
+        // Clean trailing padding bytes usually added for AES
+        if (payload.isNotEmpty && payload.last == 0x2F) {
+          while (payload.isNotEmpty && payload.last == 0x2F) {
+            payload.removeLast();
+          }
+        }
+      } else {
+        payload = List<int>.from(rawBuffer);
+      }
+    } else {
+      final result = _preprocessFrame(rawBuffer, key, headerInfo);
+
+      if (result.errorMsg != null) {
+        return ParsedResult(
+          header: headerInfo.isValid ? headerInfo : null,
+          error: result.errorMsg,
+        );
+      }
+
+      if (result.payload.isEmpty) {
+        debugPrint("Error: Preprocessing failed (Frame ignored or invalid).");
+        return ParsedResult(
+          header: headerInfo.isValid ? headerInfo : null,
+          error: "Preprocessing failed (Frame ignored or invalid).",
+        );
+      }
+
+      payload = List<int>.from(result.payload);
+      payloadOffset = result.payloadOffset;
     }
 
-    if (result.payload.isEmpty) {
-      debugPrint("Error: Preprocessing failed (Frame ignored or invalid).");
-      return ParsedResult(
-        header: headerInfo.isValid ? headerInfo : null,
-        error: "Preprocessing failed (Frame ignored or invalid).",
-      );
-    }
-
-    final payload = List<int>.from(result.payload);
     debugPrint("Normalized Payload Size: ${payload.length}");
 
     // Cleanup: Strip trailing 0x2F (Idle Fill Bytes)
@@ -99,7 +167,7 @@ class PacketParser {
     int count = mbus.decode(
       Uint8List.fromList(payload),
       records,
-      offset: result.payloadOffset,
+      offset: payloadOffset,
       driver: driver,
     );
     MBusError err = mbus.getError();
@@ -119,7 +187,7 @@ class PacketParser {
       int retryCount = mbus.decode(
         Uint8List.fromList(retryPayload),
         records,
-        offset: result.payloadOffset,
+        offset: payloadOffset,
         driver: driver,
       );
       err = mbus.getError();

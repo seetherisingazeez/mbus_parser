@@ -26,7 +26,7 @@ void main() {
   print('Parsing 86-byte Room Sensor payload...');
   // Automatically handles unpacking, decryption, truncation, overflows, and driver overrides!
   final result = PacketParser.parseHex(
-    hexString, 
+    hexString,
     keyHex: keyHex,
     driver: customDriver,
   );
