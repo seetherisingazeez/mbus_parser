@@ -1,4 +1,4 @@
-## 1.0.0 (2026-04-01)
+## 0.0.1 (2026-04-01)
 
 - Initial stable release.
 - Implemented core EN 13757-3 / EN 13757-4 algorithms.
