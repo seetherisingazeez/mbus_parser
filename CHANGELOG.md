@@ -1,0 +1,9 @@
+## 1.0.0 (2026-04-01)
+
+- Initial stable release.
+- Ported packet decoding engine from native C++ codebase. 
+- Implemented core EN 13757-3 / EN 13757-4 algorithms.
+- Full AES-128-CBC cryptographic decryption pipeline (Security Mode 5) built-in natively via `pointycastle`.
+- Added highly robust truncation tolerance to correctly unpack valid records even if trailing bytes contain transmission errors.
+- Handled all standard Value Information Fields (VIF) and Data Information Fields (DIF).
+- Support for complex secondary addressing, historical records, and multidimensional arrays for devices logging extensive logs.
