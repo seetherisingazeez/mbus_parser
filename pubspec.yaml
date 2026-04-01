@@ -1,6 +1,6 @@
 name: mbus_parser
 description: A robust Dart parser for Wireless M-Bus (EN 13757-4) and Wired M-Bus (EN 13757-3) telegrams, with built-in AES decryption and record decoding.
-version: 0.0.1
+version: 0.0.2
 repository: https://github.com/seetherisingazeez/mbus_parser
 
 environment:

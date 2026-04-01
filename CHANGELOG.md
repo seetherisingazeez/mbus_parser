@@ -1,3 +1,7 @@
+## 0.0.2 (2026-04-01)
+
+- Added support for custom drivers to override VIF translations on specific ranges
+
 ## 0.0.1 (2026-04-01)
 
 - Initial stable release.

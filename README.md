@@ -68,6 +68,40 @@ void main() {
 }
 ```
 
+### Custom Drivers (Data Manipulation)
+
+You can pass an `MBusDriver` configuration to explicitly override or manipulate the parser outputs mapping based on byte ranges within the payload. If a device has proprietary formatting that doesn't follow the M-Bus spec precisely, or you just want to rename arbitrary fields to something app-specific, you can manually force the names, units, and scaling!
+
+```dart
+import 'package:mbus_parser/mbus_parser.dart';
+
+void main() {
+  final hexString = '...'; 
+
+  // Create a driver to manipulate records
+  final myCustomDriver = MBusDriver(
+    vifRanges: {
+      // Overwrite the VIF record decoded exactly at payload bytes 15-18
+      '15-18': MBusVifOverride(
+        displayName: 'Custom High Precision Temp',
+        scale: 0.1,    // E.g., apply a custom multiplier 
+        units: '°C',
+      ),
+    },
+  );
+
+  final result = PacketParser.parseHex(
+    hexString,
+    driver: myCustomDriver, 
+  );
+
+  for(var rec in result.records) {
+    // Range '15-18' will now magically decode with your custom rules above!
+    print('\${rec.displayName}: \${rec.valueScaled} \${rec.units}');
+  }
+}
+```
+
 ## Supported VIFs (Value Information Fields)
 The decoder supports all standard primary VIFs such as:
 - Energy (Wh, J)
