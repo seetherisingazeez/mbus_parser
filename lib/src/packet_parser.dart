@@ -22,6 +22,44 @@ class _PreprocessResult {
 
 /// The main parser class containing static methods to unpack and decode M-Bus telegraphs.
 class PacketParser {
+  /// Returns a list of all supported M-Bus device types and their descriptions.
+  static List<Map<String, dynamic>> getAllDeviceTypes() {
+    return [
+      {"type": 0x00, "value": "Other"},
+      {"type": 0x01, "value": "Oil meter"},
+      {"type": 0x02, "value": "Electricity meter"},
+      {"type": 0x03, "value": "Gas meter"},
+      {"type": 0x04, "value": "Heat meter"},
+      {"type": 0x05, "value": "Steam meter"},
+      {"type": 0x06, "value": "Warm Water (30°C - 90°C) meter"},
+      {"type": 0x07, "value": "Water meter"},
+      {"type": 0x08, "value": "Heat Cost Allocator"},
+      {"type": 0x09, "value": "Compressed air meter"},
+      {"type": 0x0A, "value": "Cooling load volume at outlet meter"},
+      {"type": 0x0B, "value": "Cooling load volume at inlet meter"},
+      {"type": 0x0C, "value": "Heat volume at inlet meter"},
+      {"type": 0x0D, "value": "Heat / Cooling load meter"},
+      {"type": 0x0E, "value": "Bus / System component"},
+      {"type": 0x0F, "value": "Unknown"},
+      {"type": 0x15, "value": "Hot water (>= 90°C) meter"},
+      {"type": 0x16, "value": "Cold water meter"},
+      {"type": 0x17, "value": "Hot / Cold water meter"},
+      {"type": 0x18, "value": "Pressure meter"},
+      {"type": 0x19, "value": "A/D converter"},
+      {"type": 0x1A, "value": "Smoke detector"},
+      {"type": 0x1B, "value": "Room sensor (e.g., temperature or humidity)"},
+      {"type": 0x1C, "value": "Gas detector"},
+      {"type": 0x20, "value": "Breaker (electricity)"},
+      {"type": 0x21, "value": "Valve (gas or water)"},
+      {"type": 0x25, "value": "Customer unit (display device)"},
+      {"type": 0x28, "value": "Waste water"},
+      {"type": 0x29, "value": "Garbage"},
+      {"type": 0x2A, "value": "Carbon dioxide"},
+      {"type": 0x36, "value": "Radio converter (system side)"},
+      {"type": 0x37, "value": "Radio converter (meter side)"},
+    ];
+  }
+
   /// Decodes the 2-byte manufacturer code into a 3-character ASCII string.
   static void decodeManufacturer(int mCode, List<int> out) {
     out[0] = ((mCode >> 10) & 0x1F) + 64;

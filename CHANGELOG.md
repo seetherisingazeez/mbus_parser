@@ -1,3 +1,7 @@
+## 0.0.4 (2026-04-01)
+
+- feat: add support for device type information to the M-Bus parser
+
 ## 0.0.3 (2026-04-01)
 
 - feat: add support for payload-only decryption and custom IV configuration to the M-Bus parser
